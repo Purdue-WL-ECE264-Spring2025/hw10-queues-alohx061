@@ -11,7 +11,7 @@ static bool checker(struct queue *q, struct game_state state)
     
     //check if the state has not been entered
     struct list_node* temp = (q -> data).head;
-    while(temp -> next != NULL)
+    while(temp != NULL)
     {
         if(temp -> value == toAdd)
         {
@@ -24,10 +24,6 @@ static bool checker(struct queue *q, struct game_state state)
         temp = temp -> next;
     }
 
-    if(temp -> value != toAdd && same_tiles(deserialize(temp -> value), state))
-    {
-        return false;
-    }
     return true;
 
 }
@@ -39,40 +35,41 @@ static bool same_tiles(struct game_state currentState, struct game_state toCompa
     {
         for(int c = 0; c < 4; c++)
         {
-            if(currentState.tiles[r][c] == toCompare.tiles[r][c])
+            if(currentState.tiles[r][c] != toCompare.tiles[r][c])
             {
-                return true;
+                return false;
             }
         }
     }
     
-    return false;
+    return true;
 
 }
 
 
 void enqueue(struct queue *q, struct game_state state) {
     size_t toAdd = serialize(state);
-    insert_at_tail(&(q -> data), toAdd);
+    insert_at_head(&(q -> data), toAdd);
 
     return;
     
 }
 
 struct game_state dequeue(struct queue *q) { 
-    size_t toCompare = remove_from_head(&(q -> data));
+    size_t toCompare = remove_from_tail(&(q -> data));
 
     return deserialize(toCompare); 
 }
 
 int number_of_moves(struct game_state start) {
     struct queue q;
+    q.data.head = NULL;
 
     struct game_state complete;
 
     //initialize here
-    complete.empty_row = 0;
-    complete.empty_col = 0;
+    complete.empty_row = 3;
+    complete.empty_col = 3;
     complete.num_steps = 0;
     int counter = 1;
     for(int r = 0; r < 4; r++)
@@ -83,44 +80,65 @@ int number_of_moves(struct game_state start) {
             counter++;
         }
     }
-    complete.tiles[4][4] = 0;
+    complete.tiles[3][3] = 0;
 
-    if(checker(&q, start))
-    {
-        enqueue(&q, start);
-    }
+    enqueue(&q, start);
+
     
-    while(q.data.head -> next != NULL)
+    while(q.data.head != NULL)
     {
         struct game_state temp = dequeue(&q);
         if(same_tiles(temp, complete))
         {
+            free_list(q.data);
             return temp.num_steps;
         }
         else
         {
-            struct game_state left = temp; 
-            move_left(&temp);
-            left.num_steps++;
+            if(temp.empty_col != 3)
+            {
+                struct game_state left = temp; 
+                move_left(&left);
 
-            struct game_state right = temp; 
-            move_right(&temp);
-            right.num_steps++;
+                if(checker(&q, left))
+                {
+                    enqueue(&q, left);
+                }
+            }
+            
+            if(temp.empty_col != 0)
+            {
+                struct game_state right = temp; 
+                move_right(&right);
 
-            struct game_state up = temp; 
-            move_up(&temp);
-            up.num_steps++;
+                if(checker(&q, right))
+                {
+                    enqueue(&q, right);
+                }
+            }
+            
+            if(temp.empty_row != 3)
+            {
+                struct game_state up = temp; 
+                move_up(&up);
 
-            struct game_state down = temp; 
-            move_down(&temp);
-            down.num_steps++;
+                if(checker(&q, up))
+                {
+                    enqueue(&q, up);
+                }
+            }
 
-            enqueue(&q, left);
-            enqueue(&q, right);
-            enqueue(&q, up);
-            enqueue(&q, down);
+            if(temp.empty_row != 0)
+            {
+                struct game_state down = temp; 
+                move_down(&down);
+
+                if(checker(&q, down))
+                {
+                    enqueue(&q, down);
+                }
+            }
         }
-
     }
     
     return -1; 
