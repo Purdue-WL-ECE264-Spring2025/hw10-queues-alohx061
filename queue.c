@@ -17,10 +17,6 @@ static bool checker(struct queue *q, struct game_state state)
         {
             return false;
         }
-        if(same_tiles(deserialize(temp -> value), state))
-        {
-            return false;
-        }
         temp = temp -> next;
     }
 
